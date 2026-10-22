@@ -1,4 +1,0 @@
-﻿Cluster,n_customers,top_genres,distinctive_genres,avg_distinct_albums,avg_tracks_per_album,avg_spend,top_artists,top_albums
-0,18,"Rock (30%), Metal (23%), Latin (20%)","Metal (x1.9), Latin (x1.3), Jazz (x1.2)",22.1,1.74,38.34,Metallica | Iron Maiden | Led Zeppelin,Load | Unplugged | Acústico
-1,29,"Rock (49%), Latin (14%), Alternative & Punk (12%)","Alternative & Punk (x1.2), Rock (x1.2), Latin (x0.9)",21.5,1.78,39.86,U2 | Lenny Kravitz | R.E.M.,Greatest Hits | News Of The World | International Superhits
-2,12,"Rock (33%), Classical (14%), Latin (14%)","Classical (x4.3), Alternative (x4.2), Jazz (x0.9)",23.4,1.63,40.2,Led Zeppelin | Lost | U2,"Carry On | Chronicle, Vol. 2 | Frank"

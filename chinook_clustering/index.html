@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101923">
+  <meta name="description" content="Dashboard giới thiệu project phân cụm khách hàng Chinook theo sở thích Track và Album bằng TF-IDF và K-Means.">
+  <title>Chinook Clustering — Customer Insights</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101923;
+      --surface: #17232f;
+      --surface-2: #1c2b39;
+      --line: #2a3b4b;
+      --text: #edf3f6;
+      --muted: #9aabb8;
+      --accent: #72e0c0;
+      --blue: #8eb8ff;
+      --yellow: #e8c878;
+      --shadow: 0 18px 50px rgb(0 0 0 / 18%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 82px; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    .shell { min-height: 100vh; }
+    .topbar {
+      position: sticky; top: 0; z-index: 5; display: flex; align-items: center;
+      justify-content: space-between; gap: 24px; padding: 13px 30px;
+      background: rgb(16 25 35 / 92%); border-bottom: 1px solid var(--line); backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 210px; text-decoration: none; }
+    .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--accent); color: #10211f; font-weight: 900; }
+    .brand-name { font-size: 14px; font-weight: 750; letter-spacing: .02em; }
+    .brand-caption { color: var(--muted); font-size: 11px; }
+    .nav { display: flex; align-items: center; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a { white-space: nowrap; padding: 8px 11px; color: var(--muted); text-decoration: none; font-size: 12px; border-radius: 8px; }
+    .nav a:hover, .nav a:focus-visible { background: var(--surface-2); color: var(--text); outline: none; }
+    .github-link { padding: 9px 13px; border: 1px solid #3c5264; border-radius: 9px; text-decoration: none; font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .github-link:hover { border-color: var(--accent); color: var(--accent); }
+    main { max-width: 1440px; margin: 0 auto; padding: 32px 34px 60px; }
+    .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 800px; margin: 9px 0 14px; font-size: clamp(34px, 5vw, 58px); line-height: 1.06; letter-spacing: -.045em; }
+    h1 span { color: var(--accent); }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(270px, .7fr); gap: 32px; align-items: center; padding: 38px 0 34px; }
+    .hero-copy { max-width: 810px; }
+    .lead { max-width: 760px; margin-bottom: 23px; color: #b9c7d0; font-size: 16px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .button { display: inline-flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid transparent; border-radius: 9px; background: var(--accent); color: #10211f; font-size: 13px; font-weight: 800; text-decoration: none; }
+    .button.secondary { border-color: var(--line); background: var(--surface); color: var(--text); }
+    .button:hover { transform: translateY(-1px); }
+    .hero-note { padding: 23px; border: 1px solid #34504e; border-radius: 15px; background: linear-gradient(145deg, #1c3439, #17232f 72%); box-shadow: var(--shadow); }
+    .hero-note .note-kicker { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .hero-note strong { display: block; margin: 7px 0; font-size: 32px; letter-spacing: -.04em; }
+    .hero-note p { margin: 0; color: var(--muted); font-size: 13px; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 6px 0 42px; }
+    .metric { padding: 17px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .metric span { display: block; color: var(--muted); font-size: 11px; }
+    .metric strong { display: block; margin-top: 5px; font-size: 24px; letter-spacing: -.03em; }
+    .metric small { color: var(--muted); font-size: 11px; }
+    section { margin: 54px 0; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 19px; }
+    .section-heading h2 { margin: 4px 0 0; font-size: clamp(25px, 3vw, 34px); letter-spacing: -.035em; }
+    .section-heading p { max-width: 620px; margin: 0; color: var(--muted); font-size: 13px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+    .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; margin: 22px 0; }
+    .flow-step { position: relative; padding: 18px 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .flow-step:not(:last-child)::after { position: absolute; top: 24px; right: -13px; z-index: 1; content: "›"; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--accent); font-size: 18px; }
+    .step-number { color: var(--accent); font-size: 11px; font-weight: 800; }
+    .flow-step strong { display: block; margin: 6px 0 4px; font-size: 14px; }
+    .flow-step p { margin: 0; color: var(--muted); font-size: 11px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .info-card { padding: 21px; }
+    .info-card h3 { margin-bottom: 8px; font-size: 17px; }
+    .info-card p, .info-card li { color: var(--muted); font-size: 13px; }
+    .info-card ul { margin: 10px 0 0; padding-left: 19px; }
+    .info-card li + li { margin-top: 6px; }
+    .inline-code, code { padding: 2px 6px; border-radius: 5px; background: #0f1922; color: #a9e4d1; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .92em; }
+    .callout { margin-top: 14px; padding: 13px 15px; border-left: 3px solid var(--yellow); border-radius: 4px 9px 9px 4px; background: #2a2a24; color: #d7d1bd; font-size: 12px; }
+    .tabs { display: flex; gap: 8px; margin: 18px 0 14px; }
+    .tab { padding: 8px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; }
+    .tab[aria-selected="true"] { border-color: #4a887b; background: #1c393a; color: var(--accent); }
+    .eval-grid, .visual-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .chart-card { min-width: 0; overflow: hidden; padding: 18px; }
+    .chart-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .chart-title h3 { margin: 0; font-size: 15px; }
+    .chart-title a, .download-link { color: var(--accent); font-size: 11px; text-decoration: none; }
+    .chart-title a:hover, .download-link:hover { text-decoration: underline; }
+    .chart-card img { display: block; width: 100%; height: auto; border-radius: 7px; background: #fff; }
+    .chart-caption { margin: 10px 1px 0; color: var(--muted); font-size: 11px; }
+    .table-card { overflow: hidden; margin-top: 14px; }
+    .table-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .table-head h3 { margin: 0; font-size: 15px; }
+    .table-head p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .table-scroll { overflow: auto; max-height: 490px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #263542; text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; z-index: 1; background: #202f3c; color: #c5d2d9; font-size: 10px; font-weight: 750; letter-spacing: .04em; white-space: nowrap; }
+    td { color: #dbe5e9; }
+    tbody tr:hover { background: #1b2b37; }
+    .table-tools { display: flex; align-items: center; gap: 10px; }
+    .search { width: min(220px, 40vw); padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #101923; color: var(--text); font-size: 11px; }
+    .cluster-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+    .cluster-card { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .cluster-card .cluster-label { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .cluster-card strong { display: block; margin: 6px 0 10px; font-size: 21px; }
+    .cluster-card p { margin: 5px 0; color: var(--muted); font-size: 11px; }
+    .cluster-card b { color: #dce7eb; font-weight: 650; }
+    .interpretation { padding: 19px 21px; border: 1px solid #34504e; border-radius: 12px; background: #182d31; }
+    .interpretation h3 { margin-bottom: 8px; font-size: 15px; }
+    .interpretation p { margin-bottom: 0; color: #b7c8c9; font-size: 12px; }
+    .run-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr); gap: 14px; }
+    .run-card { padding: 20px; }
+    .run-card h3 { margin-bottom: 12px; font-size: 16px; }
+    .command { display: block; overflow-x: auto; margin: 8px 0; padding: 10px 12px; border: 1px solid #273b49; border-radius: 8px; background: #0e171f; color: #b8e7d9; font-size: 12px; white-space: pre; }
+    .run-card p, .run-card li { color: var(--muted); font-size: 12px; }
+    .run-card ol { margin-bottom: 0; padding-left: 20px; }
+    .run-card li + li { margin-top: 7px; }
+    .limitation { display: grid; grid-template-columns: 38px 1fr; gap: 12px; margin-top: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+    .limitation-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #343126; color: var(--yellow); font-weight: 900; }
+    .limitation strong { font-size: 13px; }
+    .limitation p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+    footer { padding: 22px 0 5px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    .hidden { display: none !important; }
+    @media (max-width: 980px) {
+      .topbar { padding: 11px 18px; gap: 12px; }
+      .brand { min-width: 175px; }
+      .nav { flex: 1; }
+      main { padding: 22px 22px 48px; }
+      .hero { grid-template-columns: minmax(0, 1fr) 270px; gap: 20px; }
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .topbar { position: relative; flex-wrap: wrap; padding: 12px 15px; }
+      .brand { flex: 1; }
+      .github-link { padding: 8px 10px; }
+      .nav { order: 3; width: 100%; flex-basis: 100%; }
+      main { padding: 17px 15px 38px; }
+      .hero { grid-template-columns: 1fr; padding-top: 30px; }
+      .hero-note { max-width: none; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 32px; }
+      .metric { padding: 14px; }
+      .metric strong { font-size: 21px; }
+      section { margin: 42px 0; }
+      .section-heading { display: block; }
+      .section-heading p { margin-top: 8px; }
+      .flow { grid-template-columns: 1fr; gap: 8px; }
+      .flow-step { padding: 13px 15px; }
+      .flow-step:not(:last-child)::after { top: auto; right: 16px; bottom: -14px; transform: rotate(90deg); }
+      .two-col, .eval-grid, .visual-grid, .run-grid { grid-template-columns: 1fr; }
+      .cluster-grid { grid-template-columns: 1fr; }
+      .chart-card { padding: 13px; }
+      .table-head { align-items: flex-start; }
+      .table-tools { align-items: flex-end; flex-direction: column; }
+      .search { width: 155px; }
+      .tabs { overflow-x: auto; }
+      .tab { white-space: nowrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#overview" aria-label="Chinook Clustering, về đầu trang">
+        <span class="brand-mark">C</span>
+        <span><span class="brand-name">CHINOOK / CLUSTERING</span><br><span class="brand-caption">CUSTOMER INSIGHTS</span></span>
+      </a>
+      <nav class="nav" aria-label="Điều hướng chính">
+        <a href="#overview">Overview</a>
+        <a href="#methodology">Methodology</a>
+        <a href="#evaluation">Model Evaluation</a>
+        <a href="#results">Clustering Results</a>
+        <a href="#conclusion">Conclusion</a>
+      </nav>
+      <a class="github-link" href="https://github.com/search?q=%22chinook_clustering%22&type=repositories" target="_blank" rel="noopener noreferrer" aria-label="Tìm source project trên GitHub">↗ GitHub source</a>
+    </header>
+
+    <main>
+      <section id="overview" class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <div class="eyebrow">Customer segmentation · Chinook dataset</div>
+          <h1 id="page-title">Khám phá gu nghe nhạc<br><span>từ dữ liệu mua hàng.</span></h1>
+          <p class="lead">Project phân cụm khách hàng Chinook theo hai góc nhìn — Track và Album. Thay vì so khớp ID sản phẩm quá thưa, mô hình gom lịch sử mua thành hồ sơ thể loại rồi dùng TF-IDF và K-Means để tìm các nhóm hành vi có thể diễn giải.</p>
+          <div class="hero-actions">
+            <a class="button" href="#results">Khám phá kết quả <span aria-hidden="true">↓</span></a>
+            <a class="button secondary" href="#run-project">Hướng dẫn chạy project</a>
+          </div>
+        </div>
+        <aside class="hero-note">
+          <div class="note-kicker">Kết luận cần nhớ</div>
+          <strong>Nhóm để mô tả,<br>không phải chân lý.</strong>
+          <p>Silhouette của hai mô hình được chọn chỉ khoảng 0,24–0,25. Cụm hữu ích để tóm tắt xu hướng, nhưng ranh giới giữa khách hàng còn yếu.</p>
+        </aside>
+      </section>
+
+      <div class="metrics" aria-label="Tóm tắt dữ liệu và mô hình">
+        <div class="metric"><span>Khách hàng</span><strong>59</strong><small>trong dữ liệu Chinook</small></div>
+        <div class="metric"><span>Dòng hóa đơn</span><strong>2.240</strong><small>InvoiceLine</small></div>
+        <div class="metric"><span>Đặc trưng</span><strong>24 + 24</strong><small>thể loại · Track / Album</small></div>
+        <div class="metric"><span>Số cụm được chọn</span><strong>k = 3</strong><small>cho cả hai góc nhìn</small></div>
+        <div class="metric"><span>ARI giữa hai cách gom</span><strong>0,27</strong><small>nhãn Track và Album khác nhau</small></div>
+      </div>
+
+      <section id="methodology">
+        <div class="section-heading">
+          <div><div class="eyebrow">01 · Methodology</div><h2>Từ giao dịch đến cụm khách hàng</h2></div>
+          <p>Hai ma trận khách hàng × thể loại được tạo độc lập từ cùng lịch sử mua; mỗi góc nhìn huấn luyện một mô hình riêng.</p>
+        </div>
+        <div class="flow" aria-label="Quy trình xử lý dữ liệu">
+          <div class="flow-step"><span class="step-number">01 / DATA</span><strong>Chinook Database</strong><p>InvoiceLine nối Invoice → Customer → Track, Album, Genre.</p></div>
+          <div class="flow-step"><span class="step-number">02 / FEATURES</span><strong>Hồ sơ Track & Album</strong><p>Đếm track theo thể loại; đếm album duy nhất theo thể loại chủ đạo.</p></div>
+          <div class="flow-step"><span class="step-number">03 / WEIGHTING</span><strong>TF-IDF + L2</strong><p>Giảm ảnh hưởng thể loại phổ biến và chuẩn hóa véc-tơ.</p></div>
+          <div class="flow-step"><span class="step-number">04 / CLUSTERING</span><strong>K-Means</strong><p>Thử k = 2…7 riêng cho từng ma trận đặc trưng.</p></div>
+          <div class="flow-step"><span class="step-number">05 / ANALYSIS</span><strong>Đánh giá & diễn giải</strong><p>Chọn k, mô tả cụm và so sánh hai cách phân cụm.</p></div>
+        </div>
+        <div class="two-col">
+          <article class="card info-card">
+            <h3>Hai cách biểu diễn sở thích</h3>
+            <ul>
+              <li><b>Track:</b> tổng số track khách mua theo từng thể loại; Quantity được tính vào tổng.</li>
+              <li><b>Album:</b> số album khác nhau khách đã mua, nhóm theo thể loại chủ đạo của album; mỗi album chỉ tính một lần.</li>
+              <li><b>TF-IDF:</b> làm giảm trọng số thể loại phổ biến trên nhiều khách hàng; L2 normalization hỗ trợ so sánh theo cosine.</li>
+            </ul>
+          </article>
+          <article class="card info-card">
+            <h3>Vì sao không gom theo ID trực tiếp?</h3>
+            <p>README của project ghi nhận ma trận khách × TrackId chỉ phủ khoảng 1,9% (mỗi track nhiều nhất 2 khách mua), còn khách × AlbumId phủ khoảng 7,3%. Ma trận thưa khiến so sánh trực tiếp kém hữu ích, nên project tổng hợp tín hiệu theo thể loại.</p>
+            <div class="callout">Phân cụm Track và Album là hai nghiệm riêng. Số cụm 0/1/2 chỉ là nhãn kỹ thuật, không đại diện cho cùng một nhóm giữa hai mô hình.</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="evaluation">
+        <div class="section-heading">
+          <div><div class="eyebrow">02 · Model Evaluation</div><h2>Chọn k có ràng buộc</h2></div>
+          <p>Tiêu chí: silhouette cao nhất trong các k có cụm nhỏ nhất ≥ 5 khách và stability ARI ≥ 0,6; nếu không có k thỏa thì chọn silhouette cao nhất.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Chọn góc nhìn đánh giá">
+          <button class="tab" id="eval-track-tab" role="tab" aria-selected="true" aria-controls="eval-track">Track interest</button>
+          <button class="tab" id="eval-album-tab" role="tab" aria-selected="false" aria-controls="eval-album">Album interest</button>
+        </div>
+        <div id="eval-track" role="tabpanel" aria-labelledby="eval-track-tab">
+          <div class="eval-grid">
+            <article class="card chart-card"><div class="chart-title"><h3>Track · Chọn số cụm</h3><a href="output/track_k_selection.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/track_k_selection.png" alt="Biểu đồ elbow, silhouette và stability ARI cho mô hình Track" loading="lazy"><p class="chart-caption">Đường chấm đánh dấu k=3. Điểm silhouette cao nhất ở bảng thử nghiệm là k=6, nhưng cụm nhỏ nhất chỉ có 3 khách và stability ARI thấp hơn 0,6.</p></article>
+            <article class="card chart-card"><div class="chart-title"><h3>Album · Chọn số cụm</h3><a href="output/album_k_selection.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/album_k_selection.png" alt="Biểu đồ elbow, silhouette và stability ARI cho mô hình Album" loading="lazy"><p class="chart-caption">Đường chấm đánh dấu k=3. k=4 có silhouette cao hơn nhưng stability ARI=0,5953, thấp hơn ngưỡng 0,6.</p></article>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><div><h3>Bảng đánh giá đầy đủ · Track</h3><p>Giá trị đọc từ output/k_selection_track.csv</p></div><a class="download-link" href="output/k_selection_track.csv" download>Tải CSV ↓</a></div>
+            <div class="table-scroll"><table id="track-scores"></table></div>
+          </div>
+        </div>
+        <div id="eval-album" role="tabpanel" aria-labelledby="eval-album-tab" class="hidden">
+          <div class="eval-grid">
+            <article class="card chart-card"><div class="chart-title"><h3>Album · Chọn số cụm</h3><a href="output/album_k_selection.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/album_k_selection.png" alt="Biểu đồ đánh giá mô hình Album" loading="lazy"><p class="chart-caption">k=3 thỏa cả hai điều kiện: cụm nhỏ nhất 12 khách, stability ARI=0,646.</p></article>
+            <article class="card chart-card"><div class="chart-title"><h3>Track · Chọn số cụm</h3><a href="output/track_k_selection.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/track_k_selection.png" alt="Biểu đồ đánh giá mô hình Track" loading="lazy"><p class="chart-caption">k=3 thỏa cả hai điều kiện: cụm nhỏ nhất 8 khách, stability ARI=0,640.</p></article>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><div><h3>Bảng đánh giá đầy đủ · Album</h3><p>Giá trị đọc từ output/k_selection_album.csv</p></div><a class="download-link" href="output/k_selection_album.csv" download>Tải CSV ↓</a></div>
+            <div class="table-scroll"><table id="album-scores"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="results">
+        <div class="section-heading">
+          <div><div class="eyebrow">03 · Clustering Results</div><h2>Ba cụm, hai góc nhìn</h2></div>
+          <p>Các mô tả dưới đây lấy từ profile CSV. Tỷ trọng thể loại và “distinctive genres” là tín hiệu tương đối, không phải nhãn định danh cứng cho từng khách.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Chọn kết quả phân cụm">
+          <button class="tab" id="result-track-tab" role="tab" aria-selected="true" aria-controls="result-track">Theo Track</button>
+          <button class="tab" id="result-album-tab" role="tab" aria-selected="false" aria-controls="result-album">Theo Album</button>
+        </div>
+        <div id="result-track" role="tabpanel" aria-labelledby="result-track-tab">
+          <div class="cluster-grid">
+            <article class="cluster-card"><span class="cluster-label">Track · Cluster 0</span><strong>29 khách · 49%</strong><p><b>Thể loại:</b> Rock 47%, Alternative & Punk 12%, Latin 12%.</p><p><b>Nổi bật:</b> Rock, Blues; nghệ sĩ Led Zeppelin, U2, Iron Maiden.</p><p><b>Chi tiêu TB:</b> 38,72 · <b>album riêng biệt TB:</b> 22,6.</p></article>
+            <article class="cluster-card"><span class="cluster-label">Track · Cluster 1</span><strong>22 khách · 37%</strong><p><b>Thể loại:</b> Rock 26%, Latin 25%, Metal 19%.</p><p><b>Nổi bật:</b> Metal, Latin, Jazz; nghệ sĩ Metallica, Led Zeppelin, Iron Maiden.</p><p><b>Chi tiêu TB:</b> 38,26 · <b>album riêng biệt TB:</b> 22,2.</p></article>
+            <article class="cluster-card"><span class="cluster-label">Track · Cluster 2</span><strong>8 khách · 14%</strong><p><b>Thể loại:</b> Rock 32%, Latin 16%, TV Shows 11%.</p><p><b>Nổi bật:</b> TV Shows, Drama, R&B/Soul; nghệ sĩ Lost, U2, Heroes.</p><p><b>Chi tiêu TB:</b> 45,50 · <b>album riêng biệt TB:</b> 19,8.</p></article>
+          </div>
+          <div class="visual-grid">
+            <article class="card chart-card"><div class="chart-title"><h3>Chiếu PCA 2D · Track</h3><a href="output/track_pca.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/track_pca.png" alt="Biểu đồ PCA hai chiều các khách hàng theo cụm Track" loading="lazy"><p class="chart-caption">Hai thành phần PCA giải thích 28% phương sai. Đây là phép chiếu để quan sát, không phải phép đo chất lượng cụm.</p></article>
+            <article class="card chart-card"><div class="chart-title"><h3>Tỷ trọng thể loại · Track</h3><a href="output/track_genre_heatmap.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/track_genre_heatmap.png" alt="Heatmap tỷ trọng thể loại của từng cụm Track" loading="lazy"><p class="chart-caption">Heatmap hiển thị tỷ trọng của các thể loại nổi bật trong từng cụm.</p></article>
+          </div>
+          <div class="card table-card"><div class="table-head"><div><h3>Cluster profile · Track</h3><p>Toàn bộ bảng mô tả cụm từ output/cluster_profile_track.csv</p></div><a class="download-link" href="output/cluster_profile_track.csv" download>Tải CSV ↓</a></div><div class="table-scroll"><table id="track-profiles"></table></div></div>
+        </div>
+        <div id="result-album" role="tabpanel" aria-labelledby="result-album-tab" class="hidden">
+          <div class="cluster-grid">
+            <article class="cluster-card"><span class="cluster-label">Album · Cluster 0</span><strong>18 khách · 31%</strong><p><b>Thể loại:</b> Rock 30%, Metal 23%, Latin 20%.</p><p><b>Nổi bật:</b> Metal, Latin, Jazz; nghệ sĩ Metallica, Iron Maiden, Led Zeppelin.</p><p><b>Chi tiêu TB:</b> 38,34 · <b>album riêng biệt TB:</b> 22,1.</p></article>
+            <article class="cluster-card"><span class="cluster-label">Album · Cluster 1</span><strong>29 khách · 49%</strong><p><b>Thể loại:</b> Rock 49%, Latin 14%, Alternative & Punk 12%.</p><p><b>Nổi bật:</b> Alternative & Punk, Rock; nghệ sĩ U2, Lenny Kravitz, R.E.M.</p><p><b>Chi tiêu TB:</b> 39,86 · <b>album riêng biệt TB:</b> 21,5.</p></article>
+            <article class="cluster-card"><span class="cluster-label">Album · Cluster 2</span><strong>12 khách · 20%</strong><p><b>Thể loại:</b> Rock 33%, Classical 14%, Latin 14%.</p><p><b>Nổi bật:</b> Classical, Alternative, Jazz; nghệ sĩ Led Zeppelin, Lost, U2.</p><p><b>Chi tiêu TB:</b> 40,20 · <b>album riêng biệt TB:</b> 23,4.</p></article>
+          </div>
+          <div class="visual-grid">
+            <article class="card chart-card"><div class="chart-title"><h3>Chiếu PCA 2D · Album</h3><a href="output/album_pca.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/album_pca.png" alt="Biểu đồ PCA hai chiều các khách hàng theo cụm Album" loading="lazy"><p class="chart-caption">Hai thành phần PCA giải thích 35% phương sai. Hình chiếu không thể hiện toàn bộ không gian đặc trưng.</p></article>
+            <article class="card chart-card"><div class="chart-title"><h3>Tỷ trọng thể loại · Album</h3><a href="output/album_genre_heatmap.png" target="_blank" rel="noopener">Mở PNG ↗</a></div><img src="output/album_genre_heatmap.png" alt="Heatmap tỷ trọng thể loại của từng cụm Album" loading="lazy"><p class="chart-caption">Tỷ trọng dựa trên số album duy nhất, không phải số lượng track.</p></article>
+          </div>
+          <div class="card table-card"><div class="table-head"><div><h3>Cluster profile · Album</h3><p>Toàn bộ bảng mô tả cụm từ output/cluster_profile_album.csv</p></div><a class="download-link" href="output/cluster_profile_album.csv" download>Tải CSV ↓</a></div><div class="table-scroll"><table id="album-profiles"></table></div></div>
+        </div>
+
+        <div class="interpretation" style="margin-top:18px">
+          <h3>Hai mô hình có cùng k, nhưng không cùng phân nhóm</h3>
+          <p>ARI giữa nhãn Track và Album là 0,27. Bảng chéo dưới đây cho thấy sự phân bố khách hàng giữa hai nghiệm; không nên đối chiếu cluster cùng số như thể chúng đồng nghĩa.</p>
+        </div>
+        <div class="card table-card">
+          <div class="table-head"><div><h3>Đối chiếu Track × Album</h3><p>Giá trị từ output/crosstab_track_vs_album.csv</p></div><a class="download-link" href="output/crosstab_track_vs_album.csv" download>Tải CSV ↓</a></div>
+          <div class="table-scroll"><table id="cross-tab"></table></div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-head"><div><h3>Khách hàng và nhãn cụm</h3><p>59 dòng từ output/customer_clusters.csv · có thể tìm theo tên hoặc quốc gia</p></div><div class="table-tools"><input class="search" id="customer-search" type="search" placeholder="Tìm khách hàng..." aria-label="Tìm trong bảng khách hàng"><a class="download-link" href="output/customer_clusters.csv" download>Tải CSV ↓</a></div></div>
+          <div class="table-scroll"><table id="customers"></table></div>
+        </div>
+      </section>
+
+      <section id="conclusion">
+        <div class="section-heading">
+          <div><div class="eyebrow">04 · Conclusion</div><h2>Kết quả hữu ích khi được đọc thận trọng</h2></div>
+          <p>Project cho thấy cách thay thế ID sản phẩm thưa bằng đặc trưng thể loại dễ diễn giải, đồng thời ghi nhận rõ giới hạn của dữ liệu và phép gom cụm.</p>
+        </div>
+        <div class="two-col">
+          <article class="card info-card">
+            <h3>Điểm rút ra từ dữ liệu</h3>
+            <ul>
+              <li>Rock xuất hiện nhiều trong các cụm; khác biệt tương đối nằm ở Metal/Latin, Alternative & Punk, và nhóm TV Shows/Drama.</li>
+              <li>Cluster Track 2 là cụm nhỏ nhất (8 khách), đồng thời có chi tiêu trung bình cao nhất trong góc nhìn Track (45,50).</li>
+              <li>Phân cụm theo album và track bổ sung góc nhìn cho nhau; độ tương đồng nhãn thấp (ARI 0,27).</li>
+            </ul>
+          </article>
+          <article class="card info-card">
+            <h3>Hạn chế đã biết</h3>
+            <ul>
+              <li>Chỉ có 59 khách hàng; mỗi khách mua trung bình khoảng 38 track theo README, nên dữ liệu ít và thưa.</li>
+              <li>Silhouette của k được chọn thấp (Track 0,242; Album 0,253), cho thấy cấu trúc cụm yếu, có thể chồng lấn.</li>
+              <li>Chọn k chịu ràng buộc kích thước cụm và độ ổn định; kết quả phụ thuộc cách tạo đặc trưng, TF-IDF và mẫu dữ liệu Chinook.</li>
+              <li>K-Means buộc mỗi khách vào một cụm; nhãn cụm không phải phân khúc có ý nghĩa phổ quát hoặc kết luận nhân quả.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="limitation"><div class="limitation-icon">!</div><div><strong>Diễn giải phù hợp</strong><p>Xem các cụm như bản tóm tắt khám phá để đặt giả thuyết, không nên dùng silhouette hiện tại để khẳng định đã tìm được những phân khúc khách hàng tách biệt rõ ràng.</p></div></div>
+      </section>
+
+      <section id="run-project">
+        <div class="section-heading">
+          <div><div class="eyebrow">05 · Reproduce</div><h2>Chạy project trên máy</h2></div>
+          <p>Các lệnh bên dưới dựa trên README hiện có. Chạy từ thư mục gốc chứa <code>training_model.py</code>.</p>
+        </div>
+        <div class="run-grid">
+          <article class="card run-card">
+            <h3>Thiết lập và huấn luyện</h3>
+            <code class="command">pip install -r requirements.txt</code>
+            <code class="command">python training_model.py</code>
+            <p>Huấn luyện hai mô hình và tạo lại CSV/PNG trong <code>output/</code>, model trong <code>trained/</code>.</p>
+            <h3 style="margin-top:19px">Chạy với số cụm chỉ định</h3>
+            <code class="command">python training_model.py --k-track 4 --k-album 4</code>
+          </article>
+          <article class="card run-card">
+            <h3>Khám phá thêm</h3>
+            <ol>
+              <li>Kiểm tra độ thưa tùy chọn: <code>python explore_sparsity.py</code></li>
+              <li>Dự đoán cụm cho khách hàng: <code>python using_model.py 5</code></li>
+              <li>Chạy kiểm thử: <code>python test/test_connector.py</code> và <code>python test/test_features.py</code></li>
+            </ol>
+            <p style="margin-top:12px">Yêu cầu Python 3.10+ theo README. Website chỉ đọc các kết quả đã xuất và không thay đổi code huấn luyện.</p>
+          </article>
+        </div>
+        <div class="callout">Xem CSV đầy đủ: các liên kết “Tải CSV” tải tệp gốc trong <code>output/</code>. Nếu ảnh không hiện, hãy đảm bảo deploy nguyên thư mục <code>output/</code> cùng <code>index.html</code>.</div>
+      </section>
+
+      <footer>Chinook Clustering · Tóm tắt dựa trên các tệp hiện có trong <code>output/</code> và README project. <a href="output/training_log.txt" target="_blank" rel="noopener">Xem training log ↗</a></footer>
+    </main>
+  </div>
+
+  <script>
+    const scoreTrack = `k,inertia,silhouette,davies_bouldin,stability_ari,min_cluster_size
+2,19.00308885905426,0.22899438488228366,2.4214619100951578,0.836925522915893,23
+3,17.250703808027378,0.2417644836299823,2.0878956518921687,0.6404211517102026,8
+4,15.613170112705944,0.28270388717672545,1.7694351245109694,0.5855765111489386,3
+5,14.066749712382574,0.3073838104984866,1.6497445449838515,0.6860403529725508,3
+6,13.055633787513047,0.322298522431773,1.5412230191387915,0.585399482450031,3
+7,12.117412685753393,0.26964290628951054,1.6222160274541075,0.5468364938650929,3`;
+    const scoreAlbum = `k,inertia,silhouette,davies_bouldin,stability_ari,min_cluster_size
+2,18.0435713656326,0.21649440578872758,2.463623179539829,0.4379935663125834,24
+3,15.515085336100904,0.2529826311394003,1.9910881477328786,0.6459166896495275,12
+4,13.836159370165452,0.2949520270802118,1.7488893818402742,0.5952880434745247,5
+5,12.534646339203958,0.25095626477029714,1.7239544494665673,0.5399855803605659,6
+6,11.327704419524155,0.3154826385499167,1.5330159425995873,0.5100119294420755,4
+7,10.244482223029218,0.30811887049735215,1.4547236882738714,0.5952076601539558,4`;
+    const profileTrack = `Cluster,n_customers,top_genres,distinctive_genres,avg_distinct_albums,avg_tracks_per_album,avg_spend,top_artists,top_albums
+0,29,"Rock (47%), Alternative & Punk (12%), Latin (12%)","Rock (x1.3), Blues (x1.3), Alternative & Punk (x1.1)",22.6,1.69,38.72,Led Zeppelin | U2 | Iron Maiden,"Greatest Hits | Led Zeppelin III | Chronicle, Vol. 2"
+1,22,"Rock (26%), Latin (25%), Metal (19%)","Metal (x1.6), Latin (x1.4), Jazz (x1.2)",22.2,1.73,38.26,Metallica | Led Zeppelin | Iron Maiden,Acústico MTV | Unplugged | Ace Of Spades
+2,8,"Rock (32%), Latin (16%), TV Shows (11%)","TV Shows (x5.2), Drama (x5.1), R&B/Soul (x2.5)",19.8,1.93,45.5,Lost | U2 | Heroes,"Heroes, Season 1 | Lost, Season 1 | Achtung Baby"`;
+    const profileAlbum = `Cluster,n_customers,top_genres,distinctive_genres,avg_distinct_albums,avg_tracks_per_album,avg_spend,top_artists,top_albums
+0,18,"Rock (30%), Metal (23%), Latin (20%)","Metal (x1.9), Latin (x1.3), Jazz (x1.2)",22.1,1.74,38.34,Metallica | Iron Maiden | Led Zeppelin,Load | Unplugged | Acústico
+1,29,"Rock (49%), Latin (14%), Alternative & Punk (12%)","Alternative & Punk (x1.2), Rock (x1.2), Latin (x0.9)",21.5,1.78,39.86,U2 | Lenny Kravitz | R.E.M.,Greatest Hits | News Of The World | International Superhits
+2,12,"Rock (33%), Classical (14%), Latin (14%)","Classical (x4.3), Alternative (x4.2), Jazz (x0.9)",23.4,1.63,40.2,Led Zeppelin | Lost | U2,"Carry On | Chronicle, Vol. 2 | Frank"`;
+    const crossTab = `track_cluster,0,1,2
+0,2,21,6
+1,15,3,4
+2,1,5,2`;
+    const customerCsv = `CustomerId,FullName,Country,track_cluster,album_cluster
+1,Luís Gonçalves,Brazil,1,2
+2,Leonie Köhler,Germany,0,1
+3,François Tremblay,Canada,1,2
+4,Bjørn Hansen,Norway,0,2
+5,František Wichterlová,Czech Republic,0,1
+6,Helena Holý,Czech Republic,2,1
+7,Astrid Gruber,Austria,2,2
+8,Daan Peeters,Belgium,0,1
+9,Kara Nielsen,Denmark,0,1
+10,Eduardo Martins,Brazil,0,1
+11,Alexandre Rocha,Brazil,1,1
+12,Roberto Almeida,Brazil,1,0
+13,Fernanda Ramos,Brazil,1,2
+14,Mark Philips,Canada,0,1
+15,Jennifer Peterson,Canada,1,1
+16,Frank Harris,USA,1,0
+17,Jack Smith,USA,1,0
+18,Michelle Brooks,USA,0,1
+19,Tim Goyer,USA,0,1
+20,Dan Miller,USA,1,1
+21,Kathy Chase,USA,1,0
+22,Heather Leacock,USA,1,0
+23,John Gordon,USA,1,0
+24,Frank Ralston,USA,0,2
+25,Victor Stevens,USA,2,1
+26,Richard Cunningham,USA,2,1
+27,Patrick Gray,USA,0,2
+28,Julia Barnett,USA,0,1
+29,Robert Brown,Canada,0,1
+30,Edward Francis,Canada,0,1
+31,Martha Silk,Canada,1,0
+32,Aaron Mitchell,Canada,1,0
+33,Ellie Sullivan,Canada,0,1
+34,João Fernandes,Portugal,0,1
+35,Madalena Sampaio,Portugal,1,0
+36,Hannah Schneider,Germany,1,0
+37,Fynn Zimmermann,Germany,2,0
+38,Niklas Schröder,Germany,0,1
+39,Camille Bernard,France,0,2
+40,Dominique Lefebvre,France,0,1
+41,Marc Dubois,France,1,2
+42,Wyatt Girard,France,1,0
+43,Isabelle Mercier,France,0,2
+44,Terhi Hämäläinen,Finland,0,1
+45,Ladislav Kovács,Hungary,2,1
+46,Hugh O'Reilly,Ireland,2,1
+47,Lucas Mancini,Italy,0,1
+48,Johannes Van der Berg,Netherlands,0,1
+49,Stanisław Wójcik,Poland,0,1
+50,Enrique Muñoz,Spain,0,1
+51,Joakim Johansson,Sweden,1,0
+52,Emma Jones,United Kingdom,1,0
+53,Phil Hughes,United Kingdom,0,0
+54,Steve Murray,United Kingdom,1,0
+55,Mark Taylor,Australia,0,0
+56,Diego Gutiérrez,Argentina,1,0
+57,Luis Rojas,Chile,2,2
+58,Manoj Pareek,India,0,2
+59,Puja Srivastava,India,0,1`;
+
+    function parseCsv(csv) {
+      const rows = [];
+      let row = [], cell = "", quoted = false;
+      for (let i = 0; i < csv.length; i++) {
+        const char = csv[i];
+        if (quoted && char === '"' && csv[i + 1] === '"') { cell += '"'; i++; }
+        else if (char === '"') quoted = !quoted;
+        else if (char === "," && !quoted) { row.push(cell); cell = ""; }
+        else if ((char === "\n" || char === "\r") && !quoted) {
+          if (char === "\r" && csv[i + 1] === "\n") i++;
+          row.push(cell); rows.push(row); row = []; cell = "";
+        } else cell += char;
+      }
+      if (cell.length || row.length) { row.push(cell); rows.push(row); }
+      return rows.filter((item) => item.some((value) => value !== ""));
+    }
+
+    function renderTable(id, csv, headers) {
+      const parsed = parseCsv(csv);
+      const sourceHeaders = parsed[0];
+      const shownHeaders = headers || sourceHeaders;
+      const indexes = shownHeaders.map((name) => sourceHeaders.indexOf(name));
+      const table = document.getElementById(id);
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      shownHeaders.forEach((name) => {
+        const th = document.createElement("th");
+        th.textContent = name.replaceAll("_", " ");
+        headerRow.append(th);
+      });
+      thead.append(headerRow);
+      const tbody = document.createElement("tbody");
+      parsed.slice(1).forEach((values) => {
+        const tr = document.createElement("tr");
+        indexes.forEach((index) => {
+          const td = document.createElement("td");
+          td.textContent = index >= 0 ? values[index] : "";
+          tr.append(td);
+        });
+        tbody.append(tr);
+      });
+      table.replaceChildren(thead, tbody);
+    }
+
+    renderTable("track-scores", scoreTrack);
+    renderTable("album-scores", scoreAlbum);
+    renderTable("track-profiles", profileTrack);
+    renderTable("album-profiles", profileAlbum);
+    renderTable("cross-tab", crossTab);
+    renderTable("customers", customerCsv);
+
+    function setupTabs(tabId, panels) {
+      const tabs = panels.map((item) => document.getElementById(item.tab));
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => {
+          panels.forEach((item, panelIndex) => {
+            const active = panelIndex === index;
+            document.getElementById(item.panel).classList.toggle("hidden", !active);
+            tabs[panelIndex].setAttribute("aria-selected", String(active));
+          });
+        });
+      });
+    }
+    setupTabs("evaluation", [
+      { tab: "eval-track-tab", panel: "eval-track" },
+      { tab: "eval-album-tab", panel: "eval-album" }
+    ]);
+    setupTabs("results", [
+      { tab: "result-track-tab", panel: "result-track" },
+      { tab: "result-album-tab", panel: "result-album" }
+    ]);
+
+    document.getElementById("customer-search").addEventListener("input", (event) => {
+      const query = event.target.value.trim().toLocaleLowerCase("vi");
+      document.querySelectorAll("#customers tbody tr").forEach((row) => {
+        row.classList.toggle("hidden", !row.textContent.toLocaleLowerCase("vi").includes(query));
+      });
+    });
+  </script>
+</body>
+</html>

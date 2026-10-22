@@ -1,0 +1,4 @@
+﻿Cluster,n_customers,top_genres,distinctive_genres,avg_distinct_albums,avg_tracks_per_album,avg_spend,top_artists,top_albums
+0,29,"Rock (47%), Alternative & Punk (12%), Latin (12%)","Rock (x1.3), Blues (x1.3), Alternative & Punk (x1.1)",22.6,1.69,38.72,Led Zeppelin | U2 | Iron Maiden,"Greatest Hits | Led Zeppelin III | Chronicle, Vol. 2"
+1,22,"Rock (26%), Latin (25%), Metal (19%)","Metal (x1.6), Latin (x1.4), Jazz (x1.2)",22.2,1.73,38.26,Metallica | Led Zeppelin | Iron Maiden,Acústico MTV | Unplugged | Ace Of Spades
+2,8,"Rock (32%), Latin (16%), TV Shows (11%)","TV Shows (x5.2), Drama (x5.1), R&B/Soul (x2.5)",19.8,1.93,45.5,Lost | U2 | Heroes,"Heroes, Season 1 | Lost, Season 1 | Achtung Baby"

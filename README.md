@@ -12,7 +12,7 @@ python test/test_features.py
 Chạy các lệnh từ thư mục gốc của project (chứa `training_model.py`).
 Có thể ép số cụm: `python training_model.py --k-track 4 --k-album 4`.
 
-## Cấu trúc (theo phong cách bài mẫu)
+## Cấu trúc 
 | File | Vai trò |
 |---|---|
 | `connectors/connector.py` | Kết nối SQLite, `connect()` / `queryDataset()` như Connector ở bài mẫu |
